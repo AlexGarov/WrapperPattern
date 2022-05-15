@@ -1,0 +1,50 @@
+#include <iostream>
+#include<functional>
+using namespace std;
+struct Point{
+   int x,y;
+};
+void Line(Point start,Point end)
+{
+    cout<<"Line\n";
+    cout<<"P1={"<<start.x<<","<<start.y<<"}"<<endl;
+    cout<<"P2={"<<end.x<<","<<end.y<<"}"<<endl<<endl;
+}
+void Circ(int radius,Point pos)
+{
+    cout<<"Circ\n";
+    cout<<"Rad={"<<radius<<"}"<<endl;
+    cout<<"Pos={"<<pos.x<<","<<pos.y<<"}"<<endl<<endl;
+}
+// Need partial specialization for this to work
+template <typename T>
+struct Logger;
+
+// Return type and argument list
+template <typename R, typename... Args>
+struct Logger<R(Args...)>
+{
+    function<R(Args...)>    m_func;
+    string                  m_name;
+
+    Logger(function<R(Args...)> f, const string &n) : m_func{f}, m_name{n} { }
+
+    R operator()(Args... args) {
+        cout << "Entering " << m_name << endl;
+       m_func(args...);
+
+    }
+};
+
+template <typename R, typename... Args>
+auto make_logger(R (*func)(Args...), const string &name) {
+    return Logger<R(Args...)>(std::function<R(Args...)>(func), name);
+}
+
+
+int main() {
+    auto logged_add = make_logger(Line, "Line");
+    logged_add({2, 3},{5,6});
+    logged_add({5, 3},{10,6});
+    return EXIT_SUCCESS;
+}

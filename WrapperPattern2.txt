@@ -1,0 +1,226 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct Point{
+   int x,y;
+};
+
+void Line(Point start,Point end)
+{
+    cout<<"Line\n";
+    cout<<"P1={"<<start.x<<","<<start.y<<"}"<<endl;
+    cout<<"P2={"<<end.x<<","<<end.y<<"}"<<endl<<endl;
+}
+void Circ(int radius,Point pos)
+{
+    cout<<"Circ\n";
+    cout<<"Rad={"<<radius<<"}"<<endl;
+    cout<<"Pos={"<<pos.x<<","<<pos.y<<"}"<<endl<<endl;
+}
+
+class Shape
+{
+public:
+    virtual ~Shape()=default;
+    virtual void Bind()=0;
+
+};
+
+class FunLine:public Shape
+{
+    Point m_start;
+    Point m_end;
+    // Shape interface
+public:
+    FunLine(Point start,Point end)
+        :m_start{start}
+        ,m_end{end}
+    {
+    }
+    void Update(pair<Point,Point> pos_s)
+    {
+        m_start=pos_s.first;
+        m_end=pos_s.second;
+    }
+ public:
+    void Bind() override
+    {
+        Line(m_start,m_end);
+    }
+
+
+};
+
+class FunCirc:public Shape
+{
+    int m_rad;
+    Point m_pos;
+    // Shape interface
+public:
+    FunCirc(int r, Point s)
+        :m_rad{r}
+        ,m_pos{s}
+    {
+    }
+    void Update(pair<int,Point> pos_s)
+    {
+        m_rad=pos_s.first;
+        m_pos=pos_s.second;
+    }
+ public:
+    void Bind() override
+    {
+        Circ(m_rad,m_pos);
+    }
+
+
+};
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+class BasePrintable
+{
+public:
+    virtual ~BasePrintable()=default;
+
+    void Print()
+    {
+        for(auto &r:m_shape)
+        {
+            r->Bind();
+        }
+    }
+    vector<Shape*> m_shape;
+};
+
+class Printable:public BasePrintable
+{
+public:
+    virtual void Update(Point start,Point end)=0;
+   virtual pair<Point,Point> Transformation()=0;
+};
+
+
+
+class TransformShapeLine:public Shape
+{
+   Printable & m_printable;
+   FunLine & m_buff;
+ public:
+   TransformShapeLine( Printable & printable,FunLine & buff)
+       :m_printable{printable}
+       ,m_buff{buff}
+   {}
+public:
+    void Bind() override
+    {
+       m_buff.Update( m_printable.Transformation());
+
+    }
+};
+class ClassLine:public Printable
+{
+
+    Point m_start, m_end;
+    FunLine * funLine;
+    // Shape interface
+public:
+    ClassLine(Point start,Point end)
+        :m_start{start}
+        ,m_end{end}
+        ,funLine{new FunLine(m_start,m_end)}
+    {
+
+
+        m_shape.push_back(new TransformShapeLine(*this,*funLine));
+        m_shape.push_back(funLine);
+    }
+
+public:
+    void Update(Point start,Point end) override
+    {
+        m_start=start;
+        m_end=end;
+    }
+    // Printable interface
+public:
+    pair<Point,Point> Transformation() override
+    {
+       return make_pair(m_start,m_end);
+    }
+};
+
+//////////////////////////////////////////////////////////////////
+class PrintableCirc:public BasePrintable
+{
+public:
+    virtual void Update(int r,Point s)=0;
+    virtual pair<int,Point> Transformation()=0;
+};
+
+
+
+class TransformShapeCirc:public Shape
+{
+   PrintableCirc & m_printable;
+   FunCirc & m_buff;
+ public:
+   TransformShapeCirc( PrintableCirc & printable,FunCirc & buff)
+       :m_printable{printable}
+       ,m_buff{buff}
+   {}
+public:
+    void Bind() override
+    {
+       m_buff.Update( m_printable.Transformation());
+
+    }
+};
+class ClassCirc:public PrintableCirc
+{
+    int m_rad;
+    Point m_pos;
+    FunCirc * funcirc;
+    // Shape interface
+public:
+    ClassCirc(int rad,Point pos)
+        :m_rad{rad}
+        ,m_pos{pos}
+        ,funcirc{new FunCirc(m_rad,m_pos)}
+    {
+
+
+        m_shape.push_back(new TransformShapeCirc(*this,*funcirc));
+        m_shape.push_back(funcirc);
+    }
+
+public:
+    void Update(int r,Point pos) override
+    {
+        m_rad=r;
+        m_pos=pos;
+    }
+    // Printable interface
+public:
+    pair<int,Point> Transformation() override
+    {
+       return make_pair(m_rad,m_pos);
+    }
+};
+
+int main()
+{
+    Printable *line=new ClassLine({},{});
+    PrintableCirc *circ=new ClassCirc({},{});
+    vector<BasePrintable*> sss={line,circ};
+
+    line->Update({1,1},{2,2});
+    circ->Update(3,{4,4});
+    for(auto &r:sss)
+    {
+        r->Print();
+    }
+    return 0;
+}

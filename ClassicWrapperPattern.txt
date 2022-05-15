@@ -1,0 +1,173 @@
+#include <iostream>
+using namespace std;
+
+struct Point{
+   int x,y;
+};
+void Line(Point start,Point end)
+{
+    cout<<"Line\n";
+    cout<<"P1={"<<start.x<<","<<start.y<<"}"<<endl;
+    cout<<"P2={"<<end.x<<","<<end.y<<"}"<<endl<<endl;
+}
+void Circ(int radius,Point pos)
+{
+    cout<<"Circ\n";
+    cout<<"Rad={"<<radius<<"}"<<endl;
+    cout<<"Pos={"<<pos.x<<","<<pos.y<<"}"<<endl<<endl;
+}
+//---------------------------------------Wrapper-------------------------------------//
+
+class Shape
+{
+public:
+    virtual ~Shape()=default;
+    virtual void Bind()=0;
+
+
+};
+/*-------------------------------------ClassConcritShape-----------------------------------*/
+class CLine:public Shape
+{
+protected:
+    Point m_start, m_end;
+    // Shape interface
+public:
+    CLine(Point start,Point end)
+        :m_start{start}
+        ,m_end{end}
+    {
+    }
+    void Update(Point start,Point end)
+    {
+        m_start=start;
+        m_end=end;
+    }
+
+    void Bind() override
+    {
+        Line(m_start,m_end);
+    }
+
+};
+
+/*-------------------------------------ClassDecoratorShape-----------------------------------*/
+class ClassDecoratorLine:public Shape
+{
+protected:
+    Shape *mp_shape;
+public:
+    ClassDecoratorLine(Shape *shape)
+        :mp_shape{shape}
+    {
+    }
+
+public:
+    virtual void updateLine(Point start,Point end)=0;
+
+    void Bind() override
+    {
+        mp_shape->Bind();
+    }
+};
+/*-------------------------------------ClassLine-----------------------------------*/
+
+class ClassLine:public ClassDecoratorLine
+{
+
+
+public:
+    ClassLine(Shape *shape)
+        :ClassDecoratorLine(shape)
+    {
+    }
+
+public:
+    void updateLine(Point start, Point end) override
+    {
+        static_cast<CLine*>(mp_shape)->Update(start,end);
+
+    }
+};
+/*-------------------------------------ClassCirc-----------------------------------*/
+class CCirc:public Shape
+{
+protected:
+    int m_rad;
+    Point m_pos;
+    // Shape interface
+public:
+    CCirc(int r,Point pos)
+        :m_rad{r}
+        ,m_pos{pos}
+    {
+    }
+    void Update(int r,Point p)
+    {
+        m_rad=r;
+        m_pos=p;
+    }
+
+    void Bind() override
+    {
+        Circ(m_rad,m_pos);
+    }
+
+};
+
+class ClassDecoratorCirc:public Shape
+{
+protected:
+    Shape *mp_shape;
+public:
+    ClassDecoratorCirc(Shape *shape)
+        :mp_shape{shape}
+    {
+    }
+
+public:
+    virtual void updateLine(int start,Point s)=0;
+
+    void Bind() override
+    {
+        mp_shape->Bind();
+    }
+};
+
+class ClassCirc:public ClassDecoratorCirc
+{
+
+
+public:
+    ClassCirc(Shape *shape)
+        :ClassDecoratorCirc(shape)
+    {
+    }
+
+public:
+    void updateLine(int r, Point s) override
+    {
+        static_cast<CCirc*>(mp_shape)->Update(r,s);
+
+    }
+};
+int main()
+{
+   Shape *simpleLine=new CLine({0,0},{0,0});
+   Shape *simpleCirc=new CCirc(0,{0,0});
+   ClassDecoratorLine *line=new ClassLine(simpleLine);
+   ClassDecoratorCirc *circ=new ClassCirc(simpleCirc);
+
+
+   line->updateLine({1,1},{2,2});
+   circ->updateLine(5,{6,6});
+   simpleLine->Bind();
+   simpleCirc->Bind();
+
+
+
+
+
+
+    return 0;
+}

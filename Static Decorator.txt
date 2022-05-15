@@ -1,0 +1,113 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+struct Point{
+   int x,y;
+};
+
+void Line(Point start,Point end)
+{
+    cout<<"Line\n";
+    cout<<"P1={"<<start.x<<","<<start.y<<"}"<<endl;
+    cout<<"P2={"<<end.x<<","<<end.y<<"}"<<endl<<endl;
+}
+void Circ(int radius,Point pos)
+{
+    cout<<"Circ\n";
+    cout<<"Rad={"<<radius<<"}"<<endl;
+    cout<<"Pos={"<<pos.x<<","<<pos.y<<"}"<<endl<<endl;
+}
+
+/////////////////////////////////////////////////////////////////
+
+
+class Shape
+{
+public:
+    virtual ~Shape()=default;
+    virtual void Bind()=0;
+
+};
+
+class FunLine:public Shape
+{
+    Point m_start;
+    Point m_end;
+    // Shape interface
+public:
+    FunLine(Point start,Point end)
+        :m_start{start}
+        ,m_end{end}
+    {
+    }
+    void Update(pair<Point,Point> pos_s)
+    {
+        m_start=pos_s.first;
+        m_end=pos_s.second;
+    }
+ public:
+    void Bind() override
+    {
+        Line(m_start,m_end);
+    }
+};
+
+class FunCirc:public Shape
+{
+    int m_rad;
+    Point m_pos;
+    // Shape interface
+public:
+    FunCirc(int r, Point s)
+        :m_rad{r}
+        ,m_pos{s}
+    {
+    }
+    void Update(pair<int,Point> pos_s)
+    {
+        m_rad=pos_s.first;
+        m_pos=pos_s.second;
+    }
+ public:
+    void Bind() override
+    {
+        Circ(m_rad,m_pos);
+    }
+};
+
+
+template <class T>  // Note: `class`, not typename
+struct Transformation : T
+{
+   // static_assert(is_base_of<Shape, T>::value, "Invalid template argument"); // Compile time safety
+
+
+    template <typename... Args>
+    Transformation( Args &&... args)
+        :T(std::forward<Args>(args)...)
+    { }
+    void Bind()override
+    {
+        T::Bind();
+    }
+};
+int main()
+{
+
+     auto u_line=new Transformation<FunLine> {Point{0,0},Point{0,0}};
+     auto u_circ=new Transformation<FunCirc> {0,Point{0,0}};
+     u_line->Update(make_pair(Point{10,8},Point{17,9}));
+     u_circ->Update(make_pair(3,Point{170,90}));
+     vector<Shape*> m={u_line,u_circ};
+    for(auto &r: m)
+    {
+        r->Bind();
+    }
+    u_line->Update(make_pair(Point{100,8},Point{17,9}));
+    u_circ->Update(make_pair(3,Point{1,9}));
+    for(auto &r: m)
+    {
+        r->Bind();
+    }
+}
